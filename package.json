@@ -10,10 +10,13 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
-		"devDependencies": {
-				"electron": "latest",
-				"electron-builder": "latest"
-		},
+	"dependencies": {
+		"electron-window-state": "^5.0.3"
+	},
+	"devDependencies": {
+		"electron": "latest",
+		"electron-builder": "latest"
+	},
 	"build": {
 		"appId": "com.electron.fbmessenger",
 		"productName": "Facebook Messenger",
@@ -22,8 +25,9 @@
 			"output": "dist"
 		},
 		"win": {
-			"target": "portable",
-			"icon": "icon.ico"
+			"target": "nsis",
+			"icon": "icon.ico",
+			"artifactName": "${productName}.${ext}"
 		}
 	}
 }
