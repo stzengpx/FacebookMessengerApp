@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, Menu, session } = require('electron');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 
@@ -35,11 +35,16 @@ function createWindow() {
 
   // Open links externally
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (!url.includes('messenger.com')) {
-      shell.openExternal(url);
+    // If the URL is part of Messenger or Facebook messages, open it in the main window
+    if (url.includes('messenger.com') || url.includes('facebook.com')) {
+      mainWindow.loadURL(url);
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
       return { action: 'deny' };
     }
-    return { action: 'allow' };
+
+    shell.openExternal(url);
+    return { action: 'deny' };
   });
 }
 
@@ -47,6 +52,47 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  const template = [
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+
+  // Handle permission requests (e.g. for notifications)
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'notifications') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
   createWindow();
 
   app.on('activate', function () {
