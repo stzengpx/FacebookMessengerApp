@@ -261,6 +261,16 @@ if (!gotTheLock) {
           click: (menuItem) => {
             notificationsEnabled = menuItem.checked;
           }
+        },
+        {
+          label: 'Launch at Startup',
+          type: 'checkbox',
+          checked: app.getLoginItemSettings().openAtLogin,
+          click: (menuItem) => {
+            app.setLoginItemSettings({
+              openAtLogin: menuItem.checked
+            });
+          }
         }
       ]
     },
