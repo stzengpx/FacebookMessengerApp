@@ -36,13 +36,20 @@ jobs:
       - name: Ad-hoc code sign (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          # Find the .app bundle and sign it with ad-hoc signature
-          APP_PATH=$(find dist -name "*.app" -type d | head -1)
-          if [ -n "$APP_PATH" ]; then
+          APP_PATH="dist/mac-arm64/Facebook Messenger.app"
+          if [ -d "$APP_PATH" ]; then
             echo "Signing $APP_PATH"
             codesign --force --deep -s - "$APP_PATH"
           else
-            echo "No .app bundle found to sign"
+            # Try x64 path as fallback
+            APP_PATH="dist/mac/Facebook Messenger.app"
+            if [ -d "$APP_PATH" ]; then
+              echo "Signing $APP_PATH"
+              codesign --force --deep -s - "$APP_PATH"
+            else
+              echo "No .app bundle found"
+              ls -la dist/
+            fi
           fi
 
       - name: Upload artifact (Windows)
