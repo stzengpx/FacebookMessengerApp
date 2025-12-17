@@ -30,3 +30,14 @@ npm run build -- --mac --dir
 ```
 
 Installer file: `dist/mac-arm64/Facebook Messenger.app`
+
+#### Install from Release
+
+若從 [Releases](https://github.com/KHeresy/FacebookMessengerApp/releases) 下載 .dmg 檔來進行安裝，
+請在安裝後先開啟 Terminal 執行以下指令，才能正常使用 Facebook Messenger.app。
+
+```=shell
+xattr -cr /Applications/"Facebook Messenger.app"
+```
+
+
