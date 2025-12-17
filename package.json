@@ -30,8 +30,15 @@
 			"artifactName": "${productName}.${ext}"
 		},
 		"mac": {
-			"target": "dmg",
-			"icon": "icon.icns"
+			"target": "pkg",
+			"icon": "icon.icns",
+			"artifactName": "${productName}-${version}.${ext}"
+		},
+		"pkg": {
+			"scripts": "build/pkg-scripts",
+			"allowAnywhere": true,
+			"allowCurrentUserHome": true,
+			"installLocation": "/Applications"
 		}
 	}
 }

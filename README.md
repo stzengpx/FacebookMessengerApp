@@ -28,5 +28,4 @@ Installer file: `dist\Facebook Messenger.exe`
 npm install
 npm run build -- --mac --dir
 ```
-
-Installer file: `dist/mac-arm64/Facebook Messenger.app`
+Installer file: `dist/Facebook Messenger-1.0.6.pkg`
