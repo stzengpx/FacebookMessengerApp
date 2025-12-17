@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fbm-macos
-          path: dist/*.pkg
+          path: dist/*.dmg
 
   release:
     needs: build

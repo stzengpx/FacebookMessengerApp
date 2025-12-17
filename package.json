@@ -30,7 +30,7 @@
 			"artifactName": "${productName}.${ext}"
 		},
 		"mac": {
-			"target": "pkg",
+			"target": "dmg",
 			"icon": "icon.icns",
 			"artifactName": "${productName}-${version}.${ext}"
 		},
