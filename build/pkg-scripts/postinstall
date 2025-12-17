@@ -1,0 +1,37 @@
+#!/bin/bash
+
+LOGFILE="/tmp/fbm_postinstall.log"
+echo "$(date): Starting postinstall script" > "$LOGFILE"
+
+# $2 is the target installation path passed by the installer
+INSTALL_PATH="$2"
+APP_NAME="Facebook Messenger.app"
+
+echo "$(date): Install path argument: $INSTALL_PATH" >> "$LOGFILE"
+
+# If $2 is not set or empty, fallback to standard locations
+if [ -z "$INSTALL_PATH" ]; then
+    echo "$(date): Install path not set, checking standard locations..." >> "$LOGFILE"
+    if [ -d "/Applications/$APP_NAME" ]; then
+        INSTALL_PATH="/Applications"
+    elif [ -d "$HOME/Applications/$APP_NAME" ]; then
+        INSTALL_PATH="$HOME/Applications"
+    fi
+fi
+
+FULL_APP_PATH="${INSTALL_PATH}/${APP_NAME}"
+echo "$(date): Target app path: $FULL_APP_PATH" >> "$LOGFILE"
+
+if [ -d "$FULL_APP_PATH" ]; then
+    echo "$(date): App found. Removing quarantine attributes..." >> "$LOGFILE"
+    xattr -cr "$FULL_APP_PATH"
+    if [ $? -eq 0 ]; then
+        echo "$(date): Success: xattr removed." >> "$LOGFILE"
+    else
+        echo "$(date): Error: Failed to remove xattr." >> "$LOGFILE"
+    fi
+else
+    echo "$(date): Error: App not found at $FULL_APP_PATH" >> "$LOGFILE"
+fi
+
+echo "$(date): Postinstall script finished." >> "$LOGFILE"
