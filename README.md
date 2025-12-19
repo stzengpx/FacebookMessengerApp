@@ -1,4 +1,4 @@
-# Facbook Messenger App
+# Facebook Messenger App
 
 Pack https://www.messenger.com/ as an App with electron.
 
@@ -37,10 +37,9 @@ Installer file: `dist/mac-arm64/Facebook Messenger.app`
 
 Since this application is not signed with an Apple Developer Certificate, macOS Gatekeeper may block it from running. To fix this:
 
-1. Move the app to your **Applications** folder.
-2. Open **Terminal**.
-3. Run the following command:
+1. Open **Terminal**.
+2. Run the following command:
    ```bash
    sudo xattr -cr /Applications/Facebook\ Messenger.app
    ```
-4. You should now be able to open the app.
+3. You should now be able to open the app.
