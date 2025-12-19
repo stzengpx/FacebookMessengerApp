@@ -30,3 +30,17 @@ npm run build -- --mac --dir
 ```
 
 Installer file: `dist/mac-arm64/Facebook Messenger.app`
+
+## Troubleshooting
+
+### macOS: "App is damaged and can't be opened"
+
+Since this application is not signed with an Apple Developer Certificate, macOS Gatekeeper may block it from running. To fix this:
+
+1. Move the app to your **Applications** folder.
+2. Open **Terminal**.
+3. Run the following command:
+   ```bash
+   sudo xattr -cr /Applications/Facebook\ Messenger.app
+   ```
+4. You should now be able to open the app.

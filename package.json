@@ -31,7 +31,8 @@
 		},
 		"mac": {
 			"target": "dmg",
-			"icon": "icon.icns"
+			"icon": "icon.icns",
+			"identity": null
 		}
 	}
 }
