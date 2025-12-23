@@ -26,7 +26,12 @@ module.exports = {
     openInBrowser: 'Open in Browser',
     copyImage: 'Copy Image',
     language: 'Language',
-    github: 'GitHub Repository'
+    github: 'GitHub Repository',
+    autoCheckUpdates: 'Auto Check for Updates',
+    updateAvailable: 'Update Available',
+    updateMessage: 'A new version {version} is available. Do you want to download it now?',
+    download: 'Download',
+    later: 'Later'
   },
   'zh-TW': {
     edit: '編輯',
@@ -55,6 +60,11 @@ module.exports = {
     openInBrowser: '在瀏覽器開啟',
     copyImage: '複製圖片',
     language: '語言',
-    github: 'GitHub 專案頁面'
+    github: 'GitHub 專案頁面',
+    autoCheckUpdates: '自動檢查更新',
+    updateAvailable: '有新版本可用',
+    updateMessage: '發現新版本 {version}。您想要現在下載嗎？',
+    download: '下載',
+    later: '稍後'
   }
 };
