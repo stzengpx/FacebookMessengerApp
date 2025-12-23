@@ -116,8 +116,8 @@ if (!gotTheLock) {
       } else if (manual) {
          dialog.showMessageBox(BrowserWindow.getFocusedWindow() || undefined, {
           type: 'info',
-          title: t('updateAvailable'),
-          message: 'You are using the latest version.',
+          title: t('noUpdateAvailable'),
+          message: t('latestVersionMessage'),
           buttons: ['OK']
         });
       }
