@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v1.0.8-20251223] - 2025-12-23
 - feat: localize no-update-available message
 - feat: move update settings to help menu and add manual check
 - feat: use semver-compatible date version and add auto update check
