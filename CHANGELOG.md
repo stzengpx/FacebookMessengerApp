@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.9-20251229] - 2025-12-29
+- fix: fix shortcuts issue on macOS
+- build: bump github actions dependencies
+
 ## [v1.0.8-20251223] - 2025-12-23
 - feat: localize no-update-available message
 - feat: move update settings to help menu and add manual check
