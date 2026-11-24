@@ -4,8 +4,16 @@ on:
   workflow_dispatch:
   push:
     branches: [ "**" ]
+    paths-ignore:
+      - "Casks/**"
+      - "scripts/bump-cask.sh"
+      - ".github/workflows/bump-cask.yml"
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - "Casks/**"
+      - "scripts/bump-cask.sh"
+      - ".github/workflows/bump-cask.yml"
 
 permissions:
   contents: write

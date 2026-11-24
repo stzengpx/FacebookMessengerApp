@@ -1,0 +1,39 @@
+name: Bump Homebrew Cask
+
+on:
+  schedule:
+    - cron: "17 1 * * *"   # Daily at 01:17 UTC (09:17 Taiwan)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump-cask
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Bump cask to latest upstream release
+        id: bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/bump-cask.sh
+
+      - name: Check cask syntax
+        if: steps.bump.outputs.changed == 'true'
+        run: ruby -c Casks/facebook-messenger-app.rb
+
+      - name: Commit and push
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/facebook-messenger-app.rb
+          git commit -m "facebook-messenger-app ${{ steps.bump.outputs.version }}"
+          git push
