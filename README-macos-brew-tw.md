@@ -68,6 +68,23 @@ flowchart LR
     classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
 ```
 
+### 從自建的本機 Tap 搬過來
+
+如果你之前已經從本機 tap 安裝過（例如照下面步驟建的 `local/apps`），要先把舊的 cask 移掉。同一個 cask 名稱同時出現在兩個 tap 時，`brew upgrade --cask facebook-messenger-app` 這種短名稱會因為名稱重複而失敗。
+
+```bash
+# 1. 從本機 tap 移除舊的 cask
+#    tap 裡沒有其他東西的話，也可以直接 brew untap local/apps（會刪除整個 tap 目錄）
+git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
+git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app (moved to stzengpx/fbm)"
+
+# 2. 改從新的 tap 重新安裝（~/Library 裡的設定會保留）
+brew uninstall --cask facebook-messenger-app
+brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
+brew trust stzengpx/fbm
+brew install --cask stzengpx/fbm/facebook-messenger-app
+```
+
 > 下面的內容是自己手動建立並維護本機 tap 的方法。如果不想依賴這個 repo，可以照著做。
 
 ## 一、建立 Custom Tap（只需做一次）

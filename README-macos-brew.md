@@ -68,6 +68,23 @@ flowchart LR
     classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
 ```
 
+### Switching from a local tap you built earlier
+
+If you already installed the app from a local tap (for example `local/apps` from the steps below), remove the old cask first. If the same cask name exists in two taps, short names like `brew upgrade --cask facebook-messenger-app` fail because the name is ambiguous.
+
+```bash
+# 1. Remove the old cask from the local tap.
+#    If the tap holds nothing else, `brew untap local/apps` also works (it deletes the tap directory).
+git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
+git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app (moved to stzengpx/fbm)"
+
+# 2. Reinstall from the new tap (your settings in ~/Library are kept)
+brew uninstall --cask facebook-messenger-app
+brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
+brew trust stzengpx/fbm
+brew install --cask stzengpx/fbm/facebook-messenger-app
+```
+
 > The rest of this guide shows how to build and maintain your own local tap by hand. Follow it if you'd rather not depend on this repo.
 
 ## 1. Create the Custom Tap (one-time setup)
