@@ -1,323 +1,118 @@
-# Install Facebook Messenger App via a Homebrew Custom Tap (macOS)
+# Install Facebook Messenger App with Homebrew (macOS)
 
 [Back to README](README.md) | [繁體中文](README-macos-brew-tw.md)
 
-This app is not signed with an Apple Developer certificate. After you install the DMG directly, macOS Gatekeeper often reports that the app "is damaged and can't be opened", and you have to run `sudo xattr -cr ...` yourself.
+This app is not signed with an Apple Developer certificate. When you install the DMG directly, macOS Gatekeeper often says the app "is damaged and can't be opened", and you have to run `sudo xattr -cr ...` yourself before it will open.
 
-If you install it from a **Homebrew custom tap** instead, the cask's `postflight_steps` **automatically runs** `/usr/bin/xattr -cr` after every install or upgrade, so you don't have to type it by hand.
+Installing with Homebrew takes care of this for you:
 
-> **Analogy**: A tap is your own small shop. A cask is a "product card" on the shelf. The card says where to get the goods (`url`), how to check them (`sha256`), how to put them on the shelf (`app`), and what to do afterwards (`postflight_steps`). Homebrew is the clerk who follows the card. When a new version comes out, you only update the card.
+- **Quarantine is cleared automatically**: after every install or upgrade, the cask runs `xattr -cr` for you.
+- **The cask stays up to date**: GitHub Actions checks upstream for a new release every day and updates the cask when it finds one. You just run `brew upgrade`.
 
-## Architecture Overview
+> **Analogy**: This repo is a small shop (a tap). On the shelf is a "product card" (the cask) that says where to get the goods, how to check them, and what to do after they're shelved. GitHub Actions is the clerk who replaces the card every morning. You only drop by now and then to pick up the new version.
 
-```mermaid
-flowchart LR
-    GH["GitHub Releases<br/>KHeresy/FacebookMessengerApp<br/>tag: v1.6.0+20261117"]:::ext
-    TAP["Local tap<br/>local/apps"]:::tap
-    CASK["Casks/facebook-messenger-app.rb<br/>version / sha256 / url / livecheck"]:::tap
-    BREW["brew install / upgrade --cask"]:::brew
-    APP["/Applications/Facebook Messenger.app"]:::app
-    XATTR["postflight_steps<br/>xattr -cr (automatic)"]:::ok
-
-    TAP --> CASK
-    CASK -->|"url + sha256"| BREW
-    GH -->|"download DMG"| BREW
-    BREW -->|"install app"| APP
-    BREW --> XATTR
-    XATTR -->|"remove quarantine"| APP
-
-    classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
-    classDef tap fill:#0d47a1,color:#fff,stroke:#64b5f6
-    classDef brew fill:#e65100,color:#fff,stroke:#ffb74d
-    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
-    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
-```
-
-## Quick Start: Use the Ready-Made Tap (auto-updated)
-
-This repo ships the cask in [`Casks/facebook-messenger-app.rb`](Casks/facebook-messenger-app.rb), so the repo itself works as a tap. You don't need to create your own.
-
-```bash
-brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
-brew trust stzengpx/fbm   # newer Homebrew refuses to load casks from untrusted third-party taps
-brew install --cask stzengpx/fbm/facebook-messenger-app
-```
-
-To upgrade later:
-
-```bash
-brew update                                  # pull the latest cask
-brew upgrade --cask facebook-messenger-app   # postflight runs xattr -cr again
-```
-
-The [Bump Homebrew Cask](.github/workflows/bump-cask.yml) workflow keeps the cask current. It runs every day and can also be started by hand from the Actions tab. It runs [`scripts/bump-cask.sh`](scripts/bump-cask.sh), which reads the latest **published** upstream release (drafts are skipped), downloads the DMG, updates `version` and `sha256`, and commits the change.
+## How It Works
 
 ```mermaid
 flowchart LR
-    REL["Upstream release published<br/>KHeresy/FacebookMessengerApp"]:::ext
-    CRON["bump-cask.yml<br/>daily cron"]:::step
-    SCRIPT["scripts/bump-cask.sh<br/>version + sha256"]:::step
-    CASK["Casks/facebook-messenger-app.rb<br/>committed to main"]:::tap
-    USER["brew update &&<br/>brew upgrade --cask"]:::app
+    REL["Upstream publishes a release<br/>KHeresy/FacebookMessengerApp"]:::ext
+    ACT["GitHub Actions<br/>checks once a day"]:::step
+    CASK["Cask updated<br/>version + sha256"]:::tap
+    BREW["Your Mac<br/>brew update / upgrade"]:::brew
+    APP["/Applications/<br/>Facebook Messenger.app"]:::app
+    XATTR["xattr -cr runs automatically<br/>clears Gatekeeper quarantine"]:::ok
 
-    REL --> CRON --> SCRIPT -->|"changed"| CASK --> USER
+    REL --> ACT --> CASK --> BREW --> APP
+    BREW --> XATTR --> APP
 
     classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
     classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
     classDef tap fill:#e65100,color:#fff,stroke:#ffb74d
-    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
+    classDef brew fill:#4a148c,color:#fff,stroke:#ce93d8
+    classDef app fill:#263238,color:#fff,stroke:#b0bec5
+    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
 ```
 
-### Switching from a local tap you built earlier
+## Requirements
 
-If you already installed the app from a local tap (for example `local/apps` from the steps below), remove the old cask first. If the same cask name exists in two taps, short names like `brew upgrade --cask facebook-messenger-app` fail because the name is ambiguous.
+- A Mac with Apple Silicon (M-series chip)
+- macOS 26 Tahoe or later
+- [Homebrew](https://brew.sh) installed
+
+## Install
 
 ```bash
-# 1. Remove the old cask from the local tap.
-#    If the tap holds nothing else, `brew untap local/apps` also works (it deletes the tap directory).
-git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
-git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app (moved to stzengpx/fbm)"
-
-# 2. Reinstall from the new tap (your settings in ~/Library are kept)
-brew uninstall --cask facebook-messenger-app
 brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
 brew trust stzengpx/fbm
 brew install --cask stzengpx/fbm/facebook-messenger-app
 ```
 
-> The rest of this guide shows how to build and maintain your own local tap by hand. Follow it if you'd rather not depend on this repo.
-
-## 1. Create the Custom Tap (one-time setup)
-
-### 1.1 Create the tap
-
-```bash
-brew tap-new local/apps
-```
-
-- The tap is created at `$(brew --repository)/Library/Taps/local/homebrew-apps`. On Apple Silicon, the default path is `/opt/homebrew/Library/Taps/local/homebrew-apps`.
-- The directory is a git repository and includes `.github/workflows` templates. You only need those if you push the tap to GitHub.
-- You can find it at any time with:
-
-```bash
-TAP_DIR="$(brew --repository local/apps)"
-echo "$TAP_DIR"
-```
-
-> You can choose any name instead of `local/apps`. The format is `<user>/<repo>`, which maps to the directory `<user>/homebrew-<repo>`. To share the tap with others later, use your GitHub username, for example `yourname/apps`, and push it to `github.com/yourname/homebrew-apps`.
-
-### 1.2 Get the DMG's SHA256
-
-Find the latest tag on the [Releases](https://github.com/KHeresy/FacebookMessengerApp/releases) page (for example `v1.6.0+20261117`), then compute the DMG's hash:
-
-```bash
-VER=1.6.0
-BUILD=20261117
-curl -L -o /tmp/fbm.dmg \
-  "https://github.com/KHeresy/FacebookMessengerApp/releases/download/v${VER}%2B${BUILD}/Facebook.Messenger-${VER}-arm64.dmg"
-shasum -a 256 /tmp/fbm.dmg
-```
-
-> The `+` in the tag must be written as `%2B` in the URL.
-
-### 1.3 Create the cask file
-
-Create `"$(brew --repository local/apps)/Casks/facebook-messenger-app.rb"`:
-
-```ruby
-cask "facebook-messenger-app" do
-  version "1.6.0,20261117"
-  sha256 "b4d443531e230b947d13c33f783745d28311181af48641144cab22cd98aefec1"
-
-  url "https://github.com/KHeresy/FacebookMessengerApp/releases/download/v#{version.csv.first}%2B#{version.csv.second}/Facebook.Messenger-#{version.csv.first}-arm64.dmg"
-  name "Facebook Messenger App"
-  desc "Unofficial Facebook Messenger desktop application"
-  homepage "https://github.com/KHeresy/FacebookMessengerApp"
-
-  livecheck do
-    url :url
-    regex(/^v?(\d+(?:\.\d+)+)\+(\d{8})$/i)
-    strategy :github_latest do |json, regex|
-      json["tag_name"]&.match(regex) do |match|
-        "#{match[1]},#{match[2]}"
-      end
-    end
-  end
-
-  depends_on arch: :arm64
-  depends_on macos: :tahoe
-
-  app "Facebook Messenger.app"
-
-  postflight_steps do
-    run "/usr/bin/xattr",
-        args: ["-cr", "{{appdir}}/Facebook Messenger.app"],
-        sudo: true
-  end
-end
-```
-
-What each stanza does:
-
-| Stanza | Purpose |
+| Command | What it does |
 | --- | --- |
-| `version "1.6.0,20261117"` | The upstream tag is `v1.6.0+20261117`. The two parts are separated by a comma here, and the URL rebuilds the tag from `version.csv.first` and `version.csv.second` |
-| `sha256` | Hash of the DMG. brew refuses to install if the download doesn't match |
-| `livecheck` | Reads `tag_name` from the latest GitHub release and converts it to the `1.6.0,20261117` format, so `brew livecheck` can detect new versions |
-| `depends_on arch: :arm64` | Only the arm64 DMG is used, so the cask is limited to Apple Silicon |
-| `depends_on macos: :tahoe` | Requires macOS 26 Tahoe **or later**. A bare symbol means `>=`, and `brew info` shows `macOS >= 26`. Without this line, `brew style` reports `Homebrew/OSDependsOn` |
-| `app` | Copies the `.app` from the DMG to `/Applications` |
-| `postflight_steps` → `run` | After installation, runs `xattr -cr` with `sudo` to remove the quarantine attribute. `{{appdir}}` expands to the app directory (`/Applications` by default) |
+| `brew tap` | Adds this repo to Homebrew's list of sources |
+| `brew trust` | Newer Homebrew won't load third-party taps until you trust them |
+| `brew install --cask` | Downloads the DMG, verifies its SHA256, and installs the app into `/Applications` |
 
-### 1.4 Check the cask and commit
+At the end of the install, you'll be **asked for your Mac login password once**, because the `xattr` step runs with `sudo`. After that, the app opens normally.
 
-```bash
-cd "$(brew --repository local/apps)"
+### If you installed the app another way before
 
-brew style --fix --cask local/apps/facebook-messenger-app  # lint, auto-fix where possible
-brew livecheck --cask local/apps/facebook-messenger-app    # make sure livecheck finds a version
+- **Manually from the DMG**: move `/Applications/Facebook Messenger.app` to the Trash, then run the install commands above. Your settings live in `~/Library` and are kept.
+- **From a tap you built yourself** (for example `local/apps`): remove the old cask first. Otherwise the same cask name exists in two taps, and `brew upgrade` can't tell which one to use:
 
-git add Casks/facebook-messenger-app.rb
-git commit -m "Add Facebook Messenger App cask"
-```
+  ```bash
+  brew uninstall --cask facebook-messenger-app
+  git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
+  git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app"
+  ```
 
-> The cask above already includes `depends_on macos: :tahoe`, so `brew style` should report `no offenses detected`.
+  If that tap holds nothing else, you can run `brew untap local/apps` instead.
 
-### 1.5 Install
+## Upgrade
 
 ```bash
-brew install --cask local/apps/facebook-messenger-app
+brew update                                  # fetch the latest cask
+brew upgrade --cask facebook-messenger-app   # upgrade the app
 ```
 
-At the end of the installation, brew asks for your password once because `xattr` runs with `sudo`. After that, you can open the app directly.
+After the upgrade, `xattr -cr` runs again (and asks for your password again), so the app still opens right away.
 
-> If you previously installed the app manually from the DMG, delete `/Applications/Facebook Messenger.app` first, or run `brew install --cask --force ...` so brew takes over managing it.
-
-## 2. Maintenance: Checking and Updating
-
-### Workflow overview
-
-```mermaid
-flowchart TD
-    A["brew livecheck --cask<br/>local/apps/facebook-messenger-app"]:::step
-    B{"New version?"}:::decide
-    C["Nothing to do"]:::idle
-    D["brew bump-cask-pr --write-only --commit<br/>--version X.Y.Z,YYYYMMDD"]:::step
-    E["git show to review version / sha256"]:::step
-    F["brew upgrade --cask<br/>facebook-messenger-app"]:::step
-    G["postflight runs xattr -cr automatically"]:::ok
-
-    A --> B
-    B -->|"No"| C
-    B -->|"Yes"| D --> E --> F --> G
-
-    classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
-    classDef decide fill:#fff59d,color:#111,stroke:#f9a825
-    classDef idle fill:#37474f,color:#fff,stroke:#90a4ae
-    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
-```
-
-### 2.1 Check for a new upstream version
+To check for a new version first:
 
 ```bash
-brew livecheck --cask local/apps/facebook-messenger-app
+brew update
+brew outdated --cask                                     # list casks that can be upgraded
+brew info --cask stzengpx/fbm/facebook-messenger-app     # show installed and latest versions
 ```
 
-Example output:
+> The app's built-in "new version available" notice still appears, but **upgrade with `brew upgrade`** instead of downloading the DMG and overwriting the app. A manual overwrite leaves brew with the wrong version on record, and you'd have to run `xattr` yourself again.
+>
+> The cask is updated within about a day of an upstream release. If a release just came out, `brew outdated` may not show it yet. Try again the next day.
 
-```text
-facebook-messenger-app: 1.6.0,20261117 ==> 1.6.0,20261201
-```
-
-The left side of the arrow is the version in your tap, and the right side is the latest version on GitHub. If they match, you are up to date.
-
-You can also see the installed version and the casks brew considers outdated:
-
-```bash
-brew info --cask local/apps/facebook-messenger-app
-brew outdated --cask
-```
-
-> Note: `brew outdated` only compares the version in your tap with the installed version. If upstream has released a new version but your tap hasn't been updated yet, it shows nothing. Run `livecheck` first.
-
-### 2.2 Update the cask in the tap (version + SHA256)
-
-Use Homebrew's built-in `bump-cask-pr` with `--write-only`. It only modifies local files and does not open a remote PR. It downloads the new DMG and computes the SHA256 for you:
-
-```bash
-brew bump-cask-pr \
-  --write-only \
-  --commit \
-  --version 1.6.0,20261201 \
-  local/apps/facebook-messenger-app
-```
-
-- `--version` uses the same format as the cask, `<version>,<date>`. This is the string on the right side of the `livecheck` output.
-- `--commit` creates a commit in the tap repository. Leave it out if you want to review the change and commit it yourself.
-
-Review the change:
-
-```bash
-git -C "$(brew --repository local/apps)" show --stat HEAD
-git -C "$(brew --repository local/apps)" show HEAD
-```
-
-#### Manual update (if bump-cask-pr fails)
-
-1. Follow step 1.2 to download the new DMG and run `shasum -a 256`.
-2. Edit `"$(brew --repository local/apps)/Casks/facebook-messenger-app.rb"` and change `version` and `sha256`.
-3. Run `brew style --cask local/apps/facebook-messenger-app` to check the formatting.
-4. Run `git commit -am "facebook-messenger-app <new version>"`.
-
-### 2.3 Upgrade the app
-
-```bash
-brew upgrade --cask facebook-messenger-app
-```
-
-After the upgrade, `postflight_steps` runs `xattr -cr` again, so the upgraded app opens directly.
-
-> The app's built-in update notification still tells you about new versions. **Upgrade through brew instead** of downloading the DMG and overwriting the app. A manual overwrite leaves brew with the wrong installed version, and you would have to run `xattr` yourself again.
-
-### 2.4 One-liner
-
-```bash
-NEW=$(brew livecheck --cask --json local/apps/facebook-messenger-app | jq -r '.[0].version.latest') && \
-brew bump-cask-pr --write-only --commit --version "$NEW" local/apps/facebook-messenger-app && \
-brew upgrade --cask facebook-messenger-app
-```
-
-If you are already on the latest version, `bump-cask-pr` reports that the version is unchanged and stops without modifying any files. This requires `jq` (`brew install jq`).
-
-### 2.5 Update the tap itself
-
-- **Local-only tap (no remote, like `local/apps`)**: The tap contains only the files you commit, so there is nothing else to update. `brew update` only updates Homebrew itself and taps that have a remote.
-- **Tap pushed to GitHub**:
-    - Maintainer: run `git push` in the tap directory.
-    - Users: run `brew update` to pull the latest cask, then run `brew upgrade --cask facebook-messenger-app`.
-
-List your taps and view the tap's commit history:
-
-```bash
-brew tap
-git -C "$(brew --repository local/apps)" log --oneline
-```
-
-## 3. Uninstall
+## Uninstall
 
 ```bash
 brew uninstall --cask facebook-messenger-app   # remove the app
-brew untap local/apps                          # remove the whole tap (deletes the tap directory; back it up or push first)
+brew untap stzengpx/fbm                        # stop using this tap
 ```
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `Refusing to load cask ... from untrusted tap` | You haven't trusted the tap yet. Run `brew trust stzengpx/fbm` |
+| `Unknown command: trust` | Your Homebrew is older and doesn't need this step, so skip it. You can also run `brew update` to update Homebrew |
+| The app still says it "is damaged" | The postflight step probably didn't finish, for example because the password prompt was skipped. Run `sudo xattr -cr "/Applications/Facebook Messenger.app"` |
+| `brew upgrade` can't find the cask or says the name is ambiguous | A cask with the same name is still in another tap. Remove it as described in "From a tap you built yourself" above |
+| This Mac isn't supported | Only Apple Silicon Macs on macOS 26 or later are supported. On an Intel Mac, install the DMG manually |
 
 ## Command Cheat Sheet
 
 | Task | Command |
 | --- | --- |
-| Check for a new upstream version | `brew livecheck --cask local/apps/facebook-messenger-app` |
-| Show install info | `brew info --cask local/apps/facebook-messenger-app` |
-| Update cask version and SHA256 | `brew bump-cask-pr --write-only --commit --version <ver,date> local/apps/facebook-messenger-app` |
-| Lint | `brew style --fix --cask local/apps/facebook-messenger-app` |
-| Upgrade the app | `brew upgrade --cask facebook-messenger-app` |
+| Install | `brew install --cask stzengpx/fbm/facebook-messenger-app` |
+| Check for a new version | `brew update && brew outdated --cask` |
+| Upgrade | `brew upgrade --cask facebook-messenger-app` |
 | Reinstall | `brew reinstall --cask facebook-messenger-app` |
-| Go to the tap directory | `cd "$(brew --repository local/apps)"` |
+| Show info | `brew info --cask stzengpx/fbm/facebook-messenger-app` |
+| Uninstall | `brew uninstall --cask facebook-messenger-app` |

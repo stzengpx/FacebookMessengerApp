@@ -1,323 +1,118 @@
-# 以 Homebrew Custom Tap 安裝 Facebook Messenger App（macOS）
+# 用 Homebrew 安裝 Facebook Messenger App（macOS）
 
 [回到 README](README-tw.md) | [English](README-macos-brew.md)
 
-本專案沒有用 Apple 開發者憑證簽章，所以直接安裝 DMG 後，macOS Gatekeeper 常會跳出「應用程式已損毀，無法開啟」，你得自己執行 `sudo xattr -cr ...`。
+這個 App 沒有 Apple 開發者簽章。直接安裝 DMG 時，macOS Gatekeeper 常會跳出「應用程式已損毀，無法開啟」，你得自己執行 `sudo xattr -cr ...` 才能開啟。
 
-改用 **Homebrew 自訂 Tap（custom tap）** 安裝後，cask 裡的 `postflight_steps` 會在每次安裝或升級後**自動執行** `/usr/bin/xattr -cr`，不用再手動輸入。
+改用 Homebrew 安裝就不用煩惱這件事：
 
-> **比喻**：Tap 是你自己開的一間小商店，Cask 是貨架上的一張「商品說明卡」，上面寫著去哪裡進貨（`url`）、怎麼驗貨（`sha256`）、怎麼上架（`app`），以及上架後的處理步驟（`postflight_steps`）。Homebrew 是店員，照著說明卡做事。之後要換新版，只要更新說明卡就好。
+- **安裝或升級完會自動解除隔離**：每次安裝或升級後，cask 都會自動執行 `xattr -cr`。
+- **版本自動跟上**：GitHub Actions 每天檢查上游有沒有新版，有的話就自動更新 cask。你只要執行 `brew upgrade`。
 
-## 架構總覽
+> **比喻**：這個 repo 是一間小商店（tap），貨架上有一張「商品說明卡」（cask），寫著去哪裡進貨、怎麼驗貨、上架後要做什麼。GitHub Actions 是每天早上幫忙換說明卡的店員，你只要偶爾來店裡拿新貨就好。
 
-```mermaid
-flowchart LR
-    GH["GitHub Releases<br/>KHeresy/FacebookMessengerApp<br/>tag: v1.6.0+20261117"]:::ext
-    TAP["本機 Tap<br/>local/apps"]:::tap
-    CASK["Casks/facebook-messenger-app.rb<br/>version / sha256 / url / livecheck"]:::tap
-    BREW["brew install / upgrade --cask"]:::brew
-    APP["/Applications/Facebook Messenger.app"]:::app
-    XATTR["postflight_steps<br/>xattr -cr（自動）"]:::ok
-
-    TAP --> CASK
-    CASK -->|"url + sha256"| BREW
-    GH -->|"下載 DMG"| BREW
-    BREW -->|"app 安裝"| APP
-    BREW --> XATTR
-    XATTR -->|"移除 quarantine"| APP
-
-    classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
-    classDef tap fill:#0d47a1,color:#fff,stroke:#64b5f6
-    classDef brew fill:#e65100,color:#fff,stroke:#ffb74d
-    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
-    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
-```
-
-## 快速安裝：直接使用現成的 Tap（自動更新）
-
-本 repo 已經附上 cask：[`Casks/facebook-messenger-app.rb`](Casks/facebook-messenger-app.rb)，repo 本身就能當成 tap 使用，不必自己建立。
-
-```bash
-brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
-brew trust stzengpx/fbm   # 新版 Homebrew 預設不載入未信任的第三方 tap
-brew install --cask stzengpx/fbm/facebook-messenger-app
-```
-
-之後要升級：
-
-```bash
-brew update                                  # 取得最新的 cask
-brew upgrade --cask facebook-messenger-app   # postflight 會再次自動執行 xattr -cr
-```
-
-cask 由 [Bump Homebrew Cask](.github/workflows/bump-cask.yml) workflow 自動更新，每天執行一次，也可以在 Actions 頁面手動觸發。它會執行 [`scripts/bump-cask.sh`](scripts/bump-cask.sh)：讀取上游最新**已發布**的 release（會略過 draft），下載 DMG，更新 `version` 與 `sha256`，然後 commit。
+## 運作方式
 
 ```mermaid
 flowchart LR
-    REL["上游發布 release<br/>KHeresy/FacebookMessengerApp"]:::ext
-    CRON["bump-cask.yml<br/>每日 cron"]:::step
-    SCRIPT["scripts/bump-cask.sh<br/>version + sha256"]:::step
-    CASK["Casks/facebook-messenger-app.rb<br/>commit 到 main"]:::tap
-    USER["brew update &&<br/>brew upgrade --cask"]:::app
+    REL["上游發布新版<br/>KHeresy/FacebookMessengerApp"]:::ext
+    ACT["GitHub Actions<br/>每天檢查一次"]:::step
+    CASK["Cask 更新<br/>version + sha256"]:::tap
+    BREW["你的 Mac<br/>brew update / upgrade"]:::brew
+    APP["/Applications/<br/>Facebook Messenger.app"]:::app
+    XATTR["自動執行 xattr -cr<br/>解除 Gatekeeper 隔離"]:::ok
 
-    REL --> CRON --> SCRIPT -->|"有變更"| CASK --> USER
+    REL --> ACT --> CASK --> BREW --> APP
+    BREW --> XATTR --> APP
 
     classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
     classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
     classDef tap fill:#e65100,color:#fff,stroke:#ffb74d
-    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
+    classDef brew fill:#4a148c,color:#fff,stroke:#ce93d8
+    classDef app fill:#263238,color:#fff,stroke:#b0bec5
+    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
 ```
 
-### 從自建的本機 Tap 搬過來
+## 系統需求
 
-如果你之前已經從本機 tap 安裝過（例如照下面步驟建的 `local/apps`），要先把舊的 cask 移掉。同一個 cask 名稱同時出現在兩個 tap 時，`brew upgrade --cask facebook-messenger-app` 這種短名稱會因為名稱重複而失敗。
+- Apple Silicon（M 系列晶片）Mac
+- macOS 26 Tahoe 或更新版本
+- 已安裝 [Homebrew](https://brew.sh)
+
+## 安裝
 
 ```bash
-# 1. 從本機 tap 移除舊的 cask
-#    tap 裡沒有其他東西的話，也可以直接 brew untap local/apps（會刪除整個 tap 目錄）
-git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
-git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app (moved to stzengpx/fbm)"
-
-# 2. 改從新的 tap 重新安裝（~/Library 裡的設定會保留）
-brew uninstall --cask facebook-messenger-app
 brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
 brew trust stzengpx/fbm
 brew install --cask stzengpx/fbm/facebook-messenger-app
 ```
 
-> 下面的內容是自己手動建立並維護本機 tap 的方法。如果不想依賴這個 repo，可以照著做。
-
-## 一、建立 Custom Tap（只需做一次）
-
-### 1. 建立 Tap
-
-```bash
-brew tap-new local/apps
-```
-
-- Tap 會建在 `$(brew --repository)/Library/Taps/local/homebrew-apps`（Apple Silicon 預設為 `/opt/homebrew/Library/Taps/local/homebrew-apps`）。
-- 這個目錄本身就是一個 git repo，並附帶 `.github/workflows` 範本（只有推到 GitHub 時才用得到）。
-- 隨時可用下列指令找到它：
-
-```bash
-TAP_DIR="$(brew --repository local/apps)"
-echo "$TAP_DIR"
-```
-
-> 名稱 `local/apps` 可以自訂，格式是 `<user>/<repo>`，對應目錄 `<user>/homebrew-<repo>`。若之後要分享給別人，可以改用 GitHub 帳號名稱，例如 `yourname/apps`，再推到 `github.com/yourname/homebrew-apps`。
-
-### 2. 取得 DMG 的 SHA256
-
-到 [Releases](https://github.com/KHeresy/FacebookMessengerApp/releases) 確認最新的 tag（例如 `v1.6.0+20261117`），然後計算 DMG 的雜湊值：
-
-```bash
-VER=1.6.0
-BUILD=20261117
-curl -L -o /tmp/fbm.dmg \
-  "https://github.com/KHeresy/FacebookMessengerApp/releases/download/v${VER}%2B${BUILD}/Facebook.Messenger-${VER}-arm64.dmg"
-shasum -a 256 /tmp/fbm.dmg
-```
-
-> tag 中的 `+` 在網址裡必須寫成 `%2B`。
-
-### 3. 建立 Cask 檔
-
-建立 `"$(brew --repository local/apps)/Casks/facebook-messenger-app.rb"`：
-
-```ruby
-cask "facebook-messenger-app" do
-  version "1.6.0,20261117"
-  sha256 "b4d443531e230b947d13c33f783745d28311181af48641144cab22cd98aefec1"
-
-  url "https://github.com/KHeresy/FacebookMessengerApp/releases/download/v#{version.csv.first}%2B#{version.csv.second}/Facebook.Messenger-#{version.csv.first}-arm64.dmg"
-  name "Facebook Messenger App"
-  desc "Unofficial Facebook Messenger desktop application"
-  homepage "https://github.com/KHeresy/FacebookMessengerApp"
-
-  livecheck do
-    url :url
-    regex(/^v?(\d+(?:\.\d+)+)\+(\d{8})$/i)
-    strategy :github_latest do |json, regex|
-      json["tag_name"]&.match(regex) do |match|
-        "#{match[1]},#{match[2]}"
-      end
-    end
-  end
-
-  depends_on arch: :arm64
-  depends_on macos: :tahoe
-
-  app "Facebook Messenger.app"
-
-  postflight_steps do
-    run "/usr/bin/xattr",
-        args: ["-cr", "{{appdir}}/Facebook Messenger.app"],
-        sudo: true
-  end
-end
-```
-
-各段說明：
-
-| 區塊 | 作用 |
+| 指令 | 作用 |
 | --- | --- |
-| `version "1.6.0,20261117"` | 上游 tag 是 `v1.6.0+20261117`，兩段資訊用逗號分開，再用 `version.csv.first` / `version.csv.second` 組回網址 |
-| `sha256` | DMG 的雜湊值，下載內容不符時 brew 會拒絕安裝 |
-| `livecheck` | 讀 GitHub 最新 release 的 `tag_name`，轉成 `1.6.0,20261117` 格式，讓 `brew livecheck` 能比對新版 |
-| `depends_on arch: :arm64` | 目前只抓 arm64 DMG，限定 Apple Silicon |
-| `depends_on macos: :tahoe` | 限定 macOS 26 Tahoe **以上**（符號寫法即代表 `>=`，`brew info` 會顯示 `macOS >= 26`）；少了這行 `brew style` 會報 `Homebrew/OSDependsOn` |
-| `app` | 把 DMG 裡的 `.app` 複製到 `/Applications` |
-| `postflight_steps` → `run` | 安裝後以 `sudo` 執行 `xattr -cr`，移除 quarantine 屬性；`{{appdir}}` 會自動換成 App 的安裝目錄（預設 `/Applications`） |
+| `brew tap` | 把這個 repo 加入 Homebrew 的來源清單 |
+| `brew trust` | 新版 Homebrew 預設不載入第三方 tap，要先明確信任 |
+| `brew install --cask` | 下載 DMG、比對 SHA256、把 App 裝到 `/Applications` |
 
-### 4. 檢查 Cask 並提交
+安裝最後會**要求輸入一次 Mac 登入密碼**，因為解除隔離的 `xattr` 要用 `sudo` 執行。完成後就能直接開啟 App。
 
-```bash
-cd "$(brew --repository local/apps)"
+### 如果之前已經用其他方式安裝過
 
-brew style --fix --cask local/apps/facebook-messenger-app  # 格式檢查，可自動修正
-brew livecheck --cask local/apps/facebook-messenger-app    # 確認 livecheck 抓得到版本
+- **手動從 DMG 安裝**：先把 `/Applications/Facebook Messenger.app` 拖到垃圾桶，再執行上面的安裝指令。聊天設定存在 `~/Library`，不會被刪掉。
+- **從自己建的 Tap 安裝**（例如 `local/apps`）：先移除舊的 cask，否則同名 cask 會出現在兩個 tap 裡，`brew upgrade` 會無法判斷要用哪一個：
 
-git add Casks/facebook-messenger-app.rb
-git commit -m "Add Facebook Messenger App cask"
-```
+  ```bash
+  brew uninstall --cask facebook-messenger-app
+  git -C "$(brew --repository local/apps)" rm Casks/facebook-messenger-app.rb
+  git -C "$(brew --repository local/apps)" commit -m "Remove facebook-messenger-app"
+  ```
 
-> 上面的 cask 已加上 `depends_on macos: :tahoe`，`brew style` 應顯示 `no offenses detected`。
+  如果那個 tap 裡沒有其他東西，也可以直接執行 `brew untap local/apps`。
 
-### 5. 安裝
+## 升級
 
 ```bash
-brew install --cask local/apps/facebook-messenger-app
+brew update                                  # 取得最新的 cask
+brew upgrade --cask facebook-messenger-app   # 升級 App
 ```
 
-安裝最後會要求輸入一次密碼（因為 `xattr` 是用 `sudo` 執行），完成後就能直接開啟 App。
+升級後會再自動執行一次 `xattr -cr`（也會再要求輸入密碼），升級完一樣能直接開啟。
 
-> 若之前已經手動從 DMG 安裝過，請先把 `/Applications/Facebook Messenger.app` 刪除，或用 `brew install --cask --force ...` 讓 brew 接手管理。
-
-## 二、日常維護：檢查與更新
-
-### 流程總覽
-
-```mermaid
-flowchart TD
-    A["brew livecheck --cask<br/>local/apps/facebook-messenger-app"]:::step
-    B{"有新版本？"}:::decide
-    C["什麼都不用做"]:::idle
-    D["brew bump-cask-pr --write-only --commit<br/>--version X.Y.Z,YYYYMMDD"]:::step
-    E["git show 檢查 version / sha256"]:::step
-    F["brew upgrade --cask<br/>facebook-messenger-app"]:::step
-    G["postflight 自動 xattr -cr"]:::ok
-
-    A --> B
-    B -->|"否"| C
-    B -->|"是"| D --> E --> F --> G
-
-    classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
-    classDef decide fill:#fff59d,color:#111,stroke:#f9a825
-    classDef idle fill:#37474f,color:#fff,stroke:#90a4ae
-    classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
-```
-
-### 1. 檢查上游有沒有新版
+想先看看有沒有新版：
 
 ```bash
-brew livecheck --cask local/apps/facebook-messenger-app
+brew update
+brew outdated --cask                                     # 列出可升級的 cask
+brew info --cask stzengpx/fbm/facebook-messenger-app     # 查看已安裝版本與最新版本
 ```
 
-輸出範例：
+> App 內建的「有新版本」通知還是會跳出來，但**請改用 `brew upgrade` 升級**，不要手動下載 DMG 覆蓋。手動覆蓋會讓 brew 記錄的版本跟實際版本不一致，而且要自己再執行一次 `xattr`。
+>
+> 上游發布新版後，最晚約一天內 cask 就會更新。如果剛發布就想升級，`brew outdated` 可能還看不到，等隔天再試即可。
 
-```text
-facebook-messenger-app: 1.6.0,20261117 ==> 1.6.0,20261201
-```
-
-箭頭左邊是 Tap 目前寫的版本，右邊是 GitHub 最新版本；兩邊相同就代表已是最新版。
-
-也可以查看本機已安裝的版本，以及 brew 認為需要升級的 cask：
-
-```bash
-brew info --cask local/apps/facebook-messenger-app
-brew outdated --cask
-```
-
-> 注意：`brew outdated` 只會比對「Tap 裡的版本」和「已安裝版本」。上游發新版但 Tap 還沒更新時，這個指令不會顯示，所以要先用 `livecheck` 檢查。
-
-### 2. 更新 Tap 中的 Cask（版本 + SHA256）
-
-用 Homebrew 內建的 `bump-cask-pr`，搭配 `--write-only`，只修改本機檔案，不會建立遠端 PR。它會自動下載新版 DMG 並計算 SHA256：
-
-```bash
-brew bump-cask-pr \
-  --write-only \
-  --commit \
-  --version 1.6.0,20261201 \
-  local/apps/facebook-messenger-app
-```
-
-- `--version` 使用與 cask 相同的格式：`<版本>,<日期>`，也就是 `livecheck` 右邊顯示的字串。
-- `--commit` 會直接在 Tap repo 裡建立 commit；若想先檢查再自己 commit，就拿掉這個參數。
-
-確認修改內容：
-
-```bash
-git -C "$(brew --repository local/apps)" show --stat HEAD
-git -C "$(brew --repository local/apps)" show HEAD
-```
-
-#### 手動更新方式（bump-cask-pr 失敗時）
-
-1. 依照「建立 Custom Tap」的步驟 2 下載新版 DMG 並計算 `shasum -a 256`。
-2. 編輯 `"$(brew --repository local/apps)/Casks/facebook-messenger-app.rb"`，修改 `version` 與 `sha256`。
-3. 執行 `brew style --cask local/apps/facebook-messenger-app` 檢查格式。
-4. 執行 `git commit -am "facebook-messenger-app <新版本>"`。
-
-### 3. 升級 App
-
-```bash
-brew upgrade --cask facebook-messenger-app
-```
-
-升級完成後，`postflight_steps` 會再次自動執行 `xattr -cr`，所以升級後也能直接開啟 App。
-
-> App 內建的「自動更新通知」仍會提醒有新版，但**請改用 brew 升級**，不要手動下載 DMG 覆蓋。手動覆蓋會讓 brew 記錄的版本和實際版本不一致，而且需要再自己執行 `xattr`。
-
-### 4. 一行完成（懶人版）
-
-```bash
-NEW=$(brew livecheck --cask --json local/apps/facebook-messenger-app | jq -r '.[0].version.latest') && \
-brew bump-cask-pr --write-only --commit --version "$NEW" local/apps/facebook-messenger-app && \
-brew upgrade --cask facebook-messenger-app
-```
-
-已經是最新版時，`bump-cask-pr` 會回報版本相同並停止，不會改動任何檔案。（需要安裝 `jq`：`brew install jq`。）
-
-### 5. 更新 Tap 本身
-
-- **純本機 Tap（像 `local/apps` 這種沒有 remote 的）**：Tap 的內容就是你自己 commit 的檔案，不用另外更新；`brew update` 只會更新 Homebrew 本體和其他有 remote 的 Tap。
-- **推到 GitHub 的 Tap**：
-    - 維護者：在 Tap 目錄執行 `git push`。
-    - 使用者：執行 `brew update`，就會拉到最新的 cask，接著執行 `brew upgrade --cask facebook-messenger-app`。
-
-查看目前有哪些 Tap，以及 Tap 的 commit 紀錄：
-
-```bash
-brew tap
-git -C "$(brew --repository local/apps)" log --oneline
-```
-
-## 三、移除
+## 移除
 
 ```bash
 brew uninstall --cask facebook-messenger-app   # 移除 App
-brew untap local/apps                          # 移除整個 Tap（會刪除 Tap 目錄，請先備份或 push）
+brew untap stzengpx/fbm                        # 不再使用這個 tap
 ```
+
+## 疑難排解
+
+| 狀況 | 解法 |
+| --- | --- |
+| `Refusing to load cask ... from untrusted tap` | 還沒信任這個 tap，執行 `brew trust stzengpx/fbm` |
+| `Unknown command: trust` | 你的 Homebrew 版本比較舊，還不需要這一步，跳過即可。也可以先 `brew update` 更新 Homebrew |
+| 開啟時仍顯示「已損毀」 | 可能是安裝時沒輸入密碼，postflight 沒跑完。手動執行 `sudo xattr -cr "/Applications/Facebook Messenger.app"` |
+| `brew upgrade` 說找不到或名稱重複 | 同名 cask 還留在其他 tap 裡，參考上面的「從自己建的 Tap 安裝」把舊的移除 |
+| 不支援這台 Mac | 目前只有 Apple Silicon、macOS 26 以上的版本，Intel Mac 請改用手動安裝 DMG |
 
 ## 常用指令速查
 
 | 目的 | 指令 |
 | --- | --- |
-| 檢查上游新版 | `brew livecheck --cask local/apps/facebook-messenger-app` |
-| 查看安裝資訊 | `brew info --cask local/apps/facebook-messenger-app` |
-| 更新 Cask 版本與 SHA256 | `brew bump-cask-pr --write-only --commit --version <ver,date> local/apps/facebook-messenger-app` |
-| 格式檢查 | `brew style --fix --cask local/apps/facebook-messenger-app` |
-| 升級 App | `brew upgrade --cask facebook-messenger-app` |
+| 安裝 | `brew install --cask stzengpx/fbm/facebook-messenger-app` |
+| 檢查新版 | `brew update && brew outdated --cask` |
+| 升級 | `brew upgrade --cask facebook-messenger-app` |
 | 重新安裝 | `brew reinstall --cask facebook-messenger-app` |
-| 進入 Tap 目錄 | `cd "$(brew --repository local/apps)"` |
+| 查看資訊 | `brew info --cask stzengpx/fbm/facebook-messenger-app` |
+| 移除 | `brew uninstall --cask facebook-messenger-app` |
