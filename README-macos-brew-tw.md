@@ -33,6 +33,43 @@ flowchart LR
     classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
 ```
 
+## 快速安裝：直接使用現成的 Tap（自動更新）
+
+本 repo 已經附上 cask：[`Casks/facebook-messenger-app.rb`](Casks/facebook-messenger-app.rb)，repo 本身就能當成 tap 使用，不必自己建立。
+
+```bash
+brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
+brew trust stzengpx/fbm   # 新版 Homebrew 預設不載入未信任的第三方 tap
+brew install --cask stzengpx/fbm/facebook-messenger-app
+```
+
+之後要升級：
+
+```bash
+brew update                                  # 取得最新的 cask
+brew upgrade --cask facebook-messenger-app   # postflight 會再次自動執行 xattr -cr
+```
+
+cask 由 [Bump Homebrew Cask](.github/workflows/bump-cask.yml) workflow 自動更新，每天執行一次，也可以在 Actions 頁面手動觸發。它會執行 [`scripts/bump-cask.sh`](scripts/bump-cask.sh)：讀取上游最新**已發布**的 release（會略過 draft），下載 DMG，更新 `version` 與 `sha256`，然後 commit。
+
+```mermaid
+flowchart LR
+    REL["上游發布 release<br/>KHeresy/FacebookMessengerApp"]:::ext
+    CRON["bump-cask.yml<br/>每日 cron"]:::step
+    SCRIPT["scripts/bump-cask.sh<br/>version + sha256"]:::step
+    CASK["Casks/facebook-messenger-app.rb<br/>commit 到 main"]:::tap
+    USER["brew update &&<br/>brew upgrade --cask"]:::app
+
+    REL --> CRON --> SCRIPT -->|"有變更"| CASK --> USER
+
+    classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
+    classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
+    classDef tap fill:#e65100,color:#fff,stroke:#ffb74d
+    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
+```
+
+> 下面的內容是自己手動建立並維護本機 tap 的方法。如果不想依賴這個 repo，可以照著做。
+
 ## 一、建立 Custom Tap（只需做一次）
 
 ### 1. 建立 Tap

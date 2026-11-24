@@ -33,6 +33,43 @@ flowchart LR
     classDef ok fill:#1b5e20,color:#fff,stroke:#66bb6a
 ```
 
+## Quick Start: Use the Ready-Made Tap (auto-updated)
+
+This repo ships the cask in [`Casks/facebook-messenger-app.rb`](Casks/facebook-messenger-app.rb), so the repo itself works as a tap. You don't need to create your own.
+
+```bash
+brew tap stzengpx/fbm https://github.com/stzengpx/FacebookMessengerApp
+brew trust stzengpx/fbm   # newer Homebrew refuses to load casks from untrusted third-party taps
+brew install --cask stzengpx/fbm/facebook-messenger-app
+```
+
+To upgrade later:
+
+```bash
+brew update                                  # pull the latest cask
+brew upgrade --cask facebook-messenger-app   # postflight runs xattr -cr again
+```
+
+The [Bump Homebrew Cask](.github/workflows/bump-cask.yml) workflow keeps the cask current. It runs every day and can also be started by hand from the Actions tab. It runs [`scripts/bump-cask.sh`](scripts/bump-cask.sh), which reads the latest **published** upstream release (drafts are skipped), downloads the DMG, updates `version` and `sha256`, and commits the change.
+
+```mermaid
+flowchart LR
+    REL["Upstream release published<br/>KHeresy/FacebookMessengerApp"]:::ext
+    CRON["bump-cask.yml<br/>daily cron"]:::step
+    SCRIPT["scripts/bump-cask.sh<br/>version + sha256"]:::step
+    CASK["Casks/facebook-messenger-app.rb<br/>committed to main"]:::tap
+    USER["brew update &&<br/>brew upgrade --cask"]:::app
+
+    REL --> CRON --> SCRIPT -->|"changed"| CASK --> USER
+
+    classDef ext fill:#37474f,color:#fff,stroke:#90a4ae
+    classDef step fill:#0d47a1,color:#fff,stroke:#64b5f6
+    classDef tap fill:#e65100,color:#fff,stroke:#ffb74d
+    classDef app fill:#4a148c,color:#fff,stroke:#ce93d8
+```
+
+> The rest of this guide shows how to build and maintain your own local tap by hand. Follow it if you'd rather not depend on this repo.
+
 ## 1. Create the Custom Tap (one-time setup)
 
 ### 1.1 Create the tap
